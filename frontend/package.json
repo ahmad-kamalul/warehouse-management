@@ -1,0 +1,6 @@
+{
+  "name": "warehouse-management-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": { "check": "node --check app.js && node --check config.js" }
+}

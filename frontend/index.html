@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Warehouse Management | Inventory Manager</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="./">
+        <span class="brand-mark" aria-hidden="true">W</span>
+        <span>Warehouse Management<small>Your inventory, in order.</small></span>
+      </a>
+      <div id="account" class="account" hidden>
+        <span id="account-name"></span>
+        <button id="logout" class="button secondary" type="button">Sign out</button>
+      </div>
+    </header>
+    <p id="notice" class="notice" role="status" aria-live="polite" hidden></p>
+
+    <section id="auth-panel" class="auth-layout">
+      <div class="intro">
+        <span class="eyebrow">SMALL TEAMS. CLEARER STOCK.</span>
+        <h1>Know what you have.<br>See what needs attention.</h1>
+        <p>Keep stock levels, prices, and product details together.
+          Each account has its own private inventory.</p>
+        <div class="feature-list">
+          <span>✓ Search and sort your inventory</span>
+          <span>✓ Spot stock that needs replenishing</span>
+          <span>✓ Keep changes safe from accidental overwrites</span>
+        </div>
+      </div>
+      <div class="card auth-card">
+        <div class="tabs" aria-label="Account action">
+          <button id="login-tab" type="button" class="tab active" aria-pressed="true">Sign in</button>
+          <button id="register-tab" type="button" class="tab" aria-pressed="false">Create account</button>
+        </div>
+        <h2 id="auth-title">Welcome back</h2>
+        <p id="auth-description" class="muted">Sign in to manage your inventory.</p>
+        <form id="auth-form">
+          <label id="name-field" hidden>Name
+            <input name="name" maxlength="100" autocomplete="name" disabled>
+          </label>
+          <label>Email
+            <input name="email" type="email" required maxlength="254" autocomplete="email">
+          </label>
+          <label>Password
+            <input id="auth-password" name="password" type="password" required maxlength="72" autocomplete="current-password">
+          </label>
+          <p id="password-help" class="muted small" hidden>Use at least 12 characters. Maximum: 72 UTF-8 bytes.</p>
+          <button id="auth-submit" class="button primary full" type="submit">Sign in</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="inventory-panel" hidden>
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">YOUR WORKSPACE</span>
+          <h1>Inventory</h1>
+          <p id="inventory-count" class="muted">Loading inventory…</p>
+        </div>
+        <button id="add-item" class="button primary" type="button">+ Add item</button>
+      </div>
+      <form id="filters" class="card filters">
+        <label>Search<input name="q" maxlength="100" placeholder="Name, SKU, or category"></label>
+        <label>Category<input name="category" maxlength="80" placeholder="Exact category"></label>
+        <label>Sort by
+          <select name="sortBy">
+            <option value="updatedAt">Last updated</option>
+            <option value="name">Name</option><option value="sku">SKU</option>
+            <option value="quantity">Quantity</option><option value="price">Price</option>
+          </select>
+        </label>
+        <label>Order
+          <select name="direction">
+            <option value="desc">Descending</option><option value="asc">Ascending</option>
+          </select>
+        </label>
+        <label class="checkbox-label"><input name="lowStock" type="checkbox">Low stock only</label>
+        <button class="button secondary" type="submit">Apply</button>
+      </form>
+      <div class="card table-card">
+        <div class="table-scroll">
+          <table>
+            <caption class="sr-only">Inventory items</caption>
+            <thead><tr>
+              <th scope="col">Item</th><th scope="col">Category</th><th scope="col">Stock</th>
+              <th scope="col">Unit price</th><th scope="col">Actions</th>
+            </tr></thead>
+            <tbody id="item-rows"></tbody>
+          </table>
+        </div>
+        <div id="empty-state" class="empty-state" hidden>
+          <h2>No items found</h2><p class="muted">Add your first item or try different filters.</p>
+        </div>
+        <div class="pagination">
+          <button id="previous-page" class="button secondary" type="button" disabled>Previous</button>
+          <span id="page-label">Page 1</span>
+          <button id="next-page" class="button secondary" type="button" disabled>Next</button>
+        </div>
+      </div>
+    </section>
+    <footer>Warehouse Management.</footer>
+  </main>
+
+  <dialog id="item-dialog">
+    <div class="dialog-heading">
+      <h2 id="editor-title">Add item</h2>
+      <button id="close-editor" class="button secondary" type="button" aria-label="Close item editor">Close</button>
+    </div>
+    <p id="editor-notice" class="notice" role="status" aria-live="polite" hidden></p>
+    <form id="item-form">
+      <div class="form-grid">
+        <label>Item name<input name="name" required maxlength="120"></label>
+        <label>SKU<input name="sku" required maxlength="40" pattern="[A-Za-z0-9_-]{1,40}"
+          title="Letters, numbers, underscores, and hyphens only"></label>
+        <label>Category<input name="category" required maxlength="80"></label>
+        <label>Unit price (MYR)<input name="price" type="number" required min="0" max="9999999999.99" step="0.01"></label>
+        <label>Quantity<input name="quantity" type="number" required min="0" max="2147483647" step="1"></label>
+        <label>Reorder level<input name="reorderLevel" type="number" required min="0" max="2147483647" step="1"></label>
+      </div>
+      <label>Notes<textarea name="notes" rows="4" maxlength="2000"></textarea></label>
+      <p class="muted small">An item is marked low stock when its quantity is at or below its reorder level.</p>
+      <div class="dialog-actions">
+        <button id="cancel-editor" class="button secondary" type="button">Cancel</button>
+        <button id="save-item" class="button primary" type="submit">Save item</button>
+      </div>
+    </form>
+  </dialog>
+  <template id="item-row-template">
+    <tr>
+      <td data-label="Item"><strong class="item-name"></strong><small class="item-sku muted"></small></td>
+      <td data-label="Category" class="item-category"></td>
+      <td data-label="Stock"><span class="item-quantity"></span><span class="badge" hidden>Low stock</span></td>
+      <td data-label="Unit price" class="item-price"></td>
+      <td data-label="Actions"><div class="row-actions">
+        <button class="edit-item button secondary" type="button">Edit</button>
+        <button class="delete-item button danger" type="button">Delete</button>
+      </div></td>
+    </tr>
+  </template>
+</body>
+</html>
