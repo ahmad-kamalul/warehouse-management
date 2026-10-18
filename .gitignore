@@ -1,0 +1,32 @@
+# Build output and local databases
+**/target/
+*.mv.db
+*.trace.db
+*.db
+
+# Local credentials and environment overrides
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Dependency caches and browser test output
+**/node_modules/
+**/playwright-report/
+**/test-results/
+
+# IDE and operating system files
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Historical verification output
+*.log
+docs/verification/
+
+# Local self notes excluded from publication
+docs/SELF-NOTES.md
+docs/TEST-RESULTS.md
