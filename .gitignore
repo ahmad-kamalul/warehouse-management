@@ -30,3 +30,6 @@ docs/verification/
 # Local self notes excluded from publication
 docs/SELF-NOTES.md
 docs/TEST-RESULTS.md
+
+# Local Flutter tool state
+.local-tools/

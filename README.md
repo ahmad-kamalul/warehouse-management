@@ -6,6 +6,16 @@ Repository: [ahmad-kamalul/warehouse-management](https://github.com/ahmad-kamalu
 
 ## Start here
 
+### Flutter mobile app
+
+An Android/iOS Flutter companion is available in [flutter-app](flutter-app/README.md), with account authentication, searchable inventory, low-stock filtering, CRUD, version-conflict recovery, and a standalone demo mode. See its [architecture](flutter-app/docs/ARCHITECTURE.md) and [developer notes](flutter-app/docs/DEVELOPER_NOTES.md) for structure, testing, and release requirements.
+
+```powershell
+Set-Location flutter-app
+flutter pub get
+flutter run --dart-define=DEMO_MODE=true
+```
+
 | Goal | Read |
 |---|---|
 | Run the application | Local setup below |

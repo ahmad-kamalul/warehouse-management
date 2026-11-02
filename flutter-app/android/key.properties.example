@@ -1,0 +1,6 @@
+# Copy to key.properties and supply your own upload key. Do not commit secrets.
+storePassword=replace-me
+keyPassword=replace-me
+keyAlias=upload
+# Use an absolute path with forward slashes.
+storeFile=C:/path/to/upload-keystore.jks
