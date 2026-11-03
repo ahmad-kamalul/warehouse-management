@@ -2,7 +2,7 @@
 
 ## Verification on 3 November 2026
 
-Verified on Windows with Flutter 3.47.7 and Dart 3.13.5: 26 Flutter tests and nine backend HTTP/SQL integration tests passed. Static analysis, formatting, and the Android debug build are checked. Flutter transport tests use mocked HTTP; backend tests use H2. Physical camera/SQLite device acceptance, PostgreSQL operations verification, and a full mobile-to-deployed-backend run remain separate checks. The iOS host has not been compiled on this Windows machine. See the [operations guide](OPERATIONS.md) for workflow and recovery details.
+Verified with Flutter 3.47.7 and Dart 3.13.5: 26 unit/widget tests, nine backend HTTP/SQL tests, and three native Android 16 emulator invocations passed. Emulator checks used the real local backend and SQLite, including camera preview, native QR decoding, offline uploads/recovery, and force-stop persistence. Static analysis, formatting, and Android builds pass. See the [emulator report](EMULATOR_TESTING.md) for evidence and rerun instructions. Physical printed-barcode/hardware-scanner tests, PostgreSQL operations verification, deployed-network acceptance, and iOS compilation remain separate checks. See the [operations guide](OPERATIONS.md) for workflow and recovery details.
 
 ## API mapping
 

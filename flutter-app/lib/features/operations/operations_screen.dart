@@ -316,6 +316,9 @@ class _OperationsScreenState extends State<OperationsScreen> {
             controller: _sku,
             focusNode: _skuFocus,
             enabled: !op.busy,
+            // Keep the scanner input connection alive when a hardware scanner
+            // sends Enter; Android's default completion first unfocuses it.
+            onEditingComplete: () {},
             onSubmitted: _acceptCode,
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(

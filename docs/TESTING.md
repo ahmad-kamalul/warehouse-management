@@ -41,7 +41,9 @@ mvn -B "-Dspring.datasource.url=$env:DB_URL" "-Dspring.datasource.username=$env:
 
 ### Flutter mobile checks
 
-Run `flutter analyze` and `flutter test` from `flutter-app/`. The mobile suite covers inventory CRUD, master download, hardware-scanner Enter entry, goods-in upload, local outbox restore, account isolation, lost acknowledgements, version conflicts, and storage failures. See the [operations guide](../flutter-app/docs/OPERATIONS.md) for physical scanner/camera and offline acceptance exercises. Local outbox unit tests inject an in-memory store; native SQLite persistence and camera permission/lifecycle still need device testing.
+The [native Android emulator suite](../flutter-app/docs/EMULATOR_TESTING.md) additionally runs the actual app against a local backend and native SQLite, controls connectivity, and checks a force-stop/relaunch. All three device phases passed on Android 16 / API 36. Its host runner preserves the installed app between phases with `--no-uninstall`.
+
+Run `flutter analyze` and `flutter test` from `flutter-app/`. The mobile suite covers inventory CRUD, master download, hardware-style Enter entry, goods-in upload, local outbox restore, account isolation, lost acknowledgements, version conflicts, and storage failures. Unit tests inject an in-memory store; the emulator suite verifies native SQLite and camera preview. See the [operations guide](../flutter-app/docs/OPERATIONS.md) for remaining physical scanner/camera acceptance exercises.
 
 
 ### Register and create

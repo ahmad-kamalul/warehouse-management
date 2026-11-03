@@ -85,6 +85,8 @@ See [architecture](docs/ARCHITECTURE.md) for data flow, design decisions, and an
 
 ## Verify and build
 
+For native camera, SQLite, offline/retry, and process-restart checks against the live API, use the [emulator acceptance runner and report](docs/EMULATOR_TESTING.md).
+
 ```powershell
 dart format --output=none --set-exit-if-changed lib test
 flutter analyze
