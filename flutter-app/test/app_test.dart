@@ -102,6 +102,62 @@ void main() {
     expect(find.text('No items found'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+  testWidgets(
+    'warehouse operations downloads, scans with keyboard and uploads goods in',
+    (tester) async {
+      await openDemo(tester);
+      final controller = tester
+          .widget<WarehouseApp>(find.byType(WarehouseApp))
+          .controller;
+      await tester.tap(find.byTooltip('Warehouse operations'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Download master'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('8 master items downloaded'), findsOneWidget);
+      await tester.ensureVisible(find.widgetWithText(ChoiceChip, 'Goods in'));
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Goods in'));
+      await tester.pumpAndSettle();
+      final sku = find.widgetWithText(TextField, 'Scan or enter SKU');
+      await tester.ensureVisible(sku);
+      await tester.enterText(sku, 'PPE-001');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+      // A second hardware scan of the same SKU adds one unit.
+      await tester.enterText(sku, 'PPE-001');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+      final quantity = find.widgetWithText(TextFormField, 'Movement quantity');
+      expect(tester.widget<TextFormField>(quantity).controller!.text, '2');
+      final reference = find.widgetWithText(
+        TextFormField,
+        'Document / count reference',
+      );
+      await tester.ensureVisible(reference);
+      await tester.enterText(reference, 'GRN-001');
+      final save = find.text('Save to transaction queue');
+      await tester.ensureVisible(save);
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add to queue'));
+      await tester.pumpAndSettle();
+      expect(controller.operations.pendingCount, 1);
+      await tester.scrollUntilVisible(
+        find.widgetWithText(ChoiceChip, 'Transactions (1)'),
+        -300,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Transactions (1)'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Upload inventory transactions'));
+      await tester.tap(find.text('Upload inventory transactions'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Upload').last);
+      await tester.pumpAndSettle();
+      expect(controller.operations.pendingCount, 0);
+      expect((await controller.repository.get('0')).quantity, 126);
+      expect(tester.takeException(), isNull);
+    },
+  );
   testWidgets('unsaved changes require confirmation before leaving', (
     tester,
   ) async {

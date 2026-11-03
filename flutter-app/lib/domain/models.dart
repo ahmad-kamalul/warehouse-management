@@ -12,10 +12,12 @@ String decimalPrice(int cents) =>
 String money(int cents) => 'RM ${decimalPrice(cents)}';
 
 class WarehouseUser {
-  const WarehouseUser({required this.name, required this.email});
+  const WarehouseUser({required this.name, required this.email, this.id = ''});
+  final String id;
   final String name;
   final String email;
   factory WarehouseUser.fromJson(Map<String, dynamic> json) => WarehouseUser(
+    id: json['id'] as String? ?? '',
     name: json['name'] as String,
     email: json['email'] as String,
   );
@@ -62,6 +64,11 @@ class InventoryItem extends ItemDraft {
   final int version;
   final DateTime updatedAt;
   bool get lowStock => quantity <= reorderLevel;
+  Map<String, Object?> toStoredJson() => {
+    ...toJson(version: version),
+    'id': id,
+    'updatedAt': updatedAt.toIso8601String(),
+  };
   int get stockValueCents => quantity * priceCents;
   factory InventoryItem.fromJson(Map<String, dynamic> json) => InventoryItem(
     id: json['id'] as String,

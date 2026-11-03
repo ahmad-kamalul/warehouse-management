@@ -2,6 +2,7 @@ import 'dart:math';
 
 import '../core/api_client.dart';
 import '../domain/models.dart';
+import '../domain/operations.dart';
 import '../domain/warehouse_repository.dart';
 
 /// Explicit, ephemeral sandbox; never a fallback for failed network requests.
@@ -13,6 +14,59 @@ class DemoWarehouseRepository implements WarehouseRepository {
   int _nextId = 100;
   @override
   bool get isDemo => true;
+  final _receipts = <String, MovementReceipt>{};
+  @override
+  String get storageNamespace => 'demo';
+  @override
+  Future<MasterData> downloadMaster() async => MasterData(
+    downloadedAt: DateTime.now().toUtc(),
+    items: _items.values.toList(),
+  );
+  @override
+  Future<MovementReceipt> uploadMovement(StockMovement movement) async {
+    if (_receipts[movement.clientId] case final receipt?) return receipt;
+    final item = await get(movement.itemId);
+    if (movement.type == MovementType.stockCount &&
+        item.version != movement.expectedVersion) {
+      throw const ApiException(
+        'Stock changed after download. Download master and recount.',
+        status: 409,
+      );
+    }
+    final after = switch (movement.type) {
+      MovementType.stockCount => movement.quantity,
+      MovementType.goodsIn => item.quantity + movement.quantity,
+      MovementType.goodsOut => item.quantity - movement.quantity,
+    };
+    if (after < 0 || after > 2147483647) {
+      throw const ApiException(
+        'Insufficient stock or quantity exceeds limit.',
+        status: 409,
+      );
+    }
+    final updated = await save(
+      ItemDraft(
+        name: item.name,
+        sku: item.sku,
+        category: item.category,
+        quantity: after,
+        reorderLevel: item.reorderLevel,
+        priceCents: item.priceCents,
+        notes: item.notes,
+      ),
+      original: item,
+    );
+    final receipt = MovementReceipt(
+      id: newTransactionId(),
+      before: item.quantity,
+      after: after,
+      version: updated.version,
+      uploadedAt: DateTime.now().toUtc(),
+    );
+    _receipts[movement.clientId] = receipt;
+    return receipt;
+  }
+
   void _seed() {
     _items.clear();
     const rows = [
@@ -133,7 +187,11 @@ class DemoWarehouseRepository implements WarehouseRepository {
   }
 
   @override
-  void signOut() => _seed();
+  void signOut() {
+    _receipts.clear();
+    _seed();
+  }
+
   @override
   void dispose() {}
 }

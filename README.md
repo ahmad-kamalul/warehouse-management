@@ -31,7 +31,8 @@ flutter run --dart-define=DEMO_MODE=true
 - Search by name, SKU, or category; filter category/low stock; sort and paginate.
 - Reject invalid inputs, duplicate SKUs per owner, and stale updates.
 - Use PostgreSQL by default, or file-backed H2 for local learning.
-- Exercise the backend through five HTTP integration tests.
+- Download mobile item master, check stock, scan counts, receive/dispatch goods, and upload duplicate-safe stock transactions.
+- Exercise the backend through nine HTTP integration tests.
 - Use a responsive interface with balanced mobile spacing, labeled inventory cards, and visible stock, prices, and action buttons.
 
 ## Assessment Implementations

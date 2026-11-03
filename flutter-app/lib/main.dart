@@ -4,6 +4,7 @@ import 'app.dart';
 import 'core/api_client.dart';
 import 'data/api_warehouse_repository.dart';
 import 'data/demo_warehouse_repository.dart';
+import 'data/operations_store.dart';
 import 'features/warehouse_controller.dart';
 
 void main() {
@@ -13,6 +14,9 @@ void main() {
     WarehouseApp(
       controller: WarehouseController(
         demo ? DemoWarehouseRepository() : ApiWarehouseRepository(ApiClient()),
+        operationsStore: demo
+            ? MemoryOperationsStore()
+            : SqliteOperationsStore(),
       ),
     ),
   );

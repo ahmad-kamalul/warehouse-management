@@ -116,6 +116,102 @@ class ApiIntegrationTest {
                 new HttpEntity<>(null, allowed), String.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
+    @Test
+    void movementsAreIdempotentAuditedAndOwned() {
+        String owner = registerUser();
+        String other = registerUser();
+        JsonNode item = request(HttpMethod.POST, "/api/items", owner, item("Box", "BOX", 10)).getBody();
+        var input = movement(item, "GOODS_IN", 5);
+        JsonNode receipt = request(HttpMethod.POST, "/api/operations/transactions", owner, input).getBody();
+        assertThat(receipt.get("beforeQuantity").asInt()).isEqualTo(10);
+        assertThat(receipt.get("afterQuantity").asInt()).isEqualTo(15);
+        assertThat(request(HttpMethod.POST, "/api/operations/transactions", owner, input).getBody())
+            .isEqualTo(receipt);
+        assertThat(request(HttpMethod.GET, "/api/items/" + item.get("id").asText(), owner, null)
+            .getBody().get("quantity").asInt()).isEqualTo(15);
+        input.put("quantity", 6);
+        assertThat(request(HttpMethod.POST, "/api/operations/transactions", owner, input).getStatusCode())
+            .isEqualTo(HttpStatus.CONFLICT);
+        assertThat(request(HttpMethod.POST, "/api/operations/transactions", other, movement(item, "GOODS_OUT", 1))
+            .getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(request(HttpMethod.GET, "/api/operations/master", other, null).getBody().get("items").size()).isZero();
+        assertThat(request(HttpMethod.GET, "/api/operations/transactions", other, null).getBody().size()).isZero();
+        assertThat(request(HttpMethod.GET, "/api/operations/transactions", owner, null).getBody().size()).isEqualTo(1);
+        request(HttpMethod.DELETE, "/api/items/" + item.get("id").asText(), owner, null);
+        // Receipt survives item deletion, including retrying an acknowledged ID.
+        input.put("quantity", 5);
+        assertThat(request(HttpMethod.POST, "/api/operations/transactions", owner, input).getBody()).isEqualTo(receipt);
+    }
+
+    @Test
+    void stockCountsUseVersionsAndGoodsOutCannotMakeStockNegative() {
+        String token = registerUser();
+        JsonNode item = request(HttpMethod.POST, "/api/items", token, item("Box", "BOX", 10)).getBody();
+        var staleCount = movement(item, "STOCK_COUNT", 7);
+        assertThat(request(HttpMethod.POST, "/api/operations/transactions", token,
+            movement(item, "GOODS_OUT", 11)).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(request(HttpMethod.GET, "/api/operations/transactions", token, null).getBody().size()).isZero();
+        assertThat(request(HttpMethod.POST, "/api/operations/transactions", token,
+            movement(item, "GOODS_OUT", 3)).getBody().get("afterQuantity").asInt()).isEqualTo(7);
+        assertThat(request(HttpMethod.POST, "/api/operations/transactions", token, staleCount)
+            .getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        JsonNode fresh = request(HttpMethod.GET, "/api/items/" + item.get("id").asText(), token, null).getBody();
+        assertThat(request(HttpMethod.POST, "/api/operations/transactions", token,
+            movement(fresh, "STOCK_COUNT", 0)).getBody().get("afterQuantity").asInt()).isZero();
+        JsonNode master = request(HttpMethod.GET, "/api/operations/master", token, null).getBody();
+        assertThat(master.get("items").size()).isEqualTo(1);
+        assertThat(master.get("items").get(0).get("quantity").asInt()).isZero();
+        assertThat(request(HttpMethod.GET, "/api/operations/master", null, null).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void movementsRejectZeroNegativeOverflowAndMissingCountVersion() {
+        String token = registerUser();
+        JsonNode item = request(HttpMethod.POST, "/api/items", token,
+            item("Box", "BOX", Integer.MAX_VALUE)).getBody();
+        for (int quantity : new int[]{0, -1, 1}) {
+            assertThat(request(HttpMethod.POST, "/api/operations/transactions", token,
+                movement(item, "GOODS_IN", quantity)).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        }
+        var missingVersion = movement(item, "STOCK_COUNT", 4);
+        var fractional = movement(item, "GOODS_OUT", 1);
+        fractional.put("quantity", 1.5);
+        assertThat(request(HttpMethod.POST, "/api/operations/transactions", token, fractional)
+            .getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        missingVersion.remove("expectedVersion");
+        assertThat(request(HttpMethod.POST, "/api/operations/transactions", token, missingVersion)
+            .getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(request(HttpMethod.GET, "/api/items/" + item.get("id").asText(), token, null)
+            .getBody().get("quantity").asInt()).isEqualTo(Integer.MAX_VALUE);
+    }
+
+    @Test
+    void simultaneousRetriesApplyTheSameMovementOnce() throws Exception {
+        String token = registerUser();
+        JsonNode item = request(HttpMethod.POST, "/api/items", token, item("Box", "BOX", 10)).getBody();
+        var input = movement(item, "GOODS_IN", 5);
+        try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var first = executor.submit(() -> request(HttpMethod.POST, "/api/operations/transactions", token, input));
+            var second = executor.submit(() -> request(HttpMethod.POST, "/api/operations/transactions", token, input));
+            var a = first.get(15, java.util.concurrent.TimeUnit.SECONDS);
+            var b = second.get(15, java.util.concurrent.TimeUnit.SECONDS);
+            assertThat(a.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(b.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(a.getBody()).isEqualTo(b.getBody());
+        }
+        assertThat(request(HttpMethod.GET, "/api/items/" + item.get("id").asText(), token, null)
+            .getBody().get("quantity").asInt()).isEqualTo(15);
+    }
+
+    private static Map<String, Object> movement(JsonNode item, String type, int quantity) {
+        Map<String, Object> input = new HashMap<>();
+        input.put("clientId", UUID.randomUUID().toString());
+        input.put("itemId", item.get("id").asText()); input.put("type", type);
+        input.put("quantity", quantity); input.put("reference", "DOC-001"); input.put("notes", "Test movement");
+        if (type.equals("STOCK_COUNT")) input.put("expectedVersion", item.get("version").asLong());
+        return input;
+    }
+
     private String registerUser() {
         ResponseEntity<JsonNode> response = request(HttpMethod.POST, "/api/auth/register", null,
                 Map.of("name", "Test User", "email", uniqueEmail(), "password", "CorrectPassword123!"));

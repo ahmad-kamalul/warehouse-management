@@ -1,7 +1,11 @@
 import 'models.dart';
+import 'operations.dart';
 
 abstract class WarehouseRepository {
   bool get isDemo;
+  String get storageNamespace;
+  Future<MasterData> downloadMaster();
+  Future<MovementReceipt> uploadMovement(StockMovement movement);
   Future<WarehouseUser> authenticate({
     required String email,
     required String password,

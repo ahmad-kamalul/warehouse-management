@@ -34,6 +34,14 @@ mvn -B "-Dspring.datasource.url=$env:DB_URL" "-Dspring.datasource.username=$env:
 | `validationUniquenessAndFiltersWork` | Negative quantity, normalized SKU uniqueness, low-stock/search/category filters, sort/pagination, invalid sort/page/size |
 | `rejectsUnknownFieldsMalformedIdsAndMissingVersion` | Client `ownerId` rejection, required update version, malformed UUID, literal percent search |
 | `corsAllowsOnlyConfiguredFrontend` | Allowed preflight origin and rejection of another origin |
+| `movementsAreIdempotentAuditedAndOwned` | Receipt replay, changed-payload conflict, ownership isolation, audit survival after item deletion |
+| `stockCountsUseVersionsAndGoodsOutCannotMakeStockNegative` | Master download, stale count rejection, zero count, insufficient stock |
+| `movementsRejectZeroNegativeOverflowAndMissingCountVersion` | Movement validation, integer overflow, missing count version, unchanged stock on rejection |
+| `simultaneousRetriesApplyTheSameMovementOnce` | Concurrent identical HTTP uploads yield one stock change and identical receipts |
+
+### Flutter mobile checks
+
+Run `flutter analyze` and `flutter test` from `flutter-app/`. The mobile suite covers inventory CRUD, master download, hardware-scanner Enter entry, goods-in upload, local outbox restore, account isolation, lost acknowledgements, version conflicts, and storage failures. See the [operations guide](../flutter-app/docs/OPERATIONS.md) for physical scanner/camera and offline acceptance exercises. Local outbox unit tests inject an in-memory store; native SQLite persistence and camera permission/lifecycle still need device testing.
 
 
 ### Register and create

@@ -3,10 +3,21 @@ import 'package:flutter/foundation.dart';
 import '../core/api_client.dart';
 import '../domain/models.dart';
 import '../domain/warehouse_repository.dart';
+import '../data/operations_store.dart';
+import 'operations/operations_controller.dart';
 
 /// Presentation state. Widgets never call HTTP or own credentials.
 class WarehouseController extends ChangeNotifier {
-  WarehouseController(this.repository);
+  WarehouseController(this.repository, {OperationsStore? operationsStore})
+    : operations = OperationsController(
+        repository,
+        operationsStore ?? MemoryOperationsStore(),
+      ) {
+    operations.onExpired = () => signOut(
+      message: 'Your session expired. Sign in again; saved warehouse work is retained.',
+    );
+  }
+  final OperationsController operations;
   final WarehouseRepository repository;
   WarehouseUser? user;
   InventoryQuery query = const InventoryQuery();
@@ -34,6 +45,9 @@ class WarehouseController extends ChangeNotifier {
         email: email,
         password: password,
         name: name,
+      );
+      await operations.open(
+        user!.id.isEmpty ? user!.email.toLowerCase() : user!.id,
       );
       await load();
     } finally {
@@ -113,6 +127,7 @@ class WarehouseController extends ChangeNotifier {
 
   void signOut({String? message}) {
     _generation++;
+    operations.clearSession();
     repository.signOut();
     user = null;
     query = const InventoryQuery();
@@ -128,6 +143,7 @@ class WarehouseController extends ChangeNotifier {
     _disposed = true;
     _generation++;
     repository.dispose();
+    operations.dispose();
     super.dispose();
   }
 }

@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../domain/models.dart';
 import '../warehouse_controller.dart';
 import 'item_editor.dart';
+import '../operations/operations_screen.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key, required this.controller});
@@ -181,6 +182,16 @@ class _InventoryScreenState extends State<InventoryScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'Warehouse operations',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => OperationsScreen(controller: c),
+              ),
+            ),
+            icon: const Icon(Icons.qr_code_scanner),
+          ),
           IconButton(
             tooltip: 'Account and sign out',
             onPressed: _account,

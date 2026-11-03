@@ -12,6 +12,11 @@ A Flutter companion for the existing Warehouse Management Spring Boot API. Andro
 - Recover from version conflicts by explicitly reloading the latest item.
 - Handle loading, empty results, network failures, field errors, and expired sessions.
 - Explore a clearly labeled demo workspace with editable sample items.
+- Download item master for local stock lookup and scanning.
+- Record stock counts, goods in receiving, and goods out dispatch with document references.
+- Save transactions locally in SQLite and upload them with duplicate-safe server receipts.
+
+Open **Warehouse operations** using the scanner icon in the inventory toolbar. See the [operations guide](docs/OPERATIONS.md) for scanning, stocktake, receiving, dispatch, upload recovery, and offline behavior. These features require the updated backend and its automatic V2 database migration.
 
 ## Start with the demo
 
@@ -69,9 +74,10 @@ lib/
     inventory/
       inventory_screen.dart       Search, filters, paging, account
       item_editor.dart            Details, CRUD, conflict recovery
+    operations/                   Master sync, stock check, scanning, outbox uploads
 android/                          Native Android host
 ios/                              Native iOS host
-test/                             Model, API, controller, and UI tests
+test/                             Model, API, controller, outbox, and UI tests
 docs/                             Architecture, developer notes, screenshots
 ```
 

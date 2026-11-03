@@ -107,7 +107,7 @@ class ItemService {
         item.notes = input.notes() == null ? "" : input.notes().trim();
     }
 
-    private static ItemView view(Item item) {
+    static ItemView view(Item item) {
         return new ItemView(item.id, item.name, item.sku, item.category, item.quantity,
                 item.reorderLevel, item.price, item.notes, item.version,
                 item.createdAt, item.updatedAt, item.quantity <= item.reorderLevel);

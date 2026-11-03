@@ -33,7 +33,7 @@ The backend performs ownership checks and is the final validation authority. Cli
 
 Bearer JWTs live only in `ApiClient` memory. Restarting the app requires signing in. There is no plaintext token persistence, refresh token, or credentials logging. A protected request returning 401 clears the token, user, query, inventory, and pending request generation. The app removes detail routes and returns to the sign-in screen with an expiry message.
 
-The client does not decode JWTs to make authorization decisions. Expiry is detected on the next server request. Logout clears local state; the existing backend does not revoke an already copied token.
+The client does not decode JWTs to make authorization decisions. Expiry is detected on the next server request. Logout clears visible state; the existing backend does not revoke an already copied token. Operations master/outbox data remains in per-account, per-server SQLite and is restored after the same account signs in.
 
 ## Money and quantities
 
@@ -43,12 +43,20 @@ Prices use integer cents internally and a decimal string in writes. This avoids 
 
 Transport failures and timeouts produce actionable messages. Requests time out after 20 seconds, including response bodies. `ApiException` preserves HTTP status and field messages. Empty 204 responses are accepted. Non-JSON responses are rejected as unreadable instead of crashing JSON decoding. Unknown exceptions use a generic UI message. There is no automatic write retry, because a timeout does not prove that a server write failed.
 
+## Warehouse operations
+
+`OperationsController` owns downloaded master data, the local transaction queue, and upload state. `SqliteOperationsStore` saves master plus queue atomically as one versioned JSON workspace row; tests inject `MemoryOperationsStore`. The composition root selects SQLite for API mode and ephemeral memory for demo mode. Each workspace key includes the API base URL and authenticated account ID. Session epochs prevent late operations from repopulating another account's screen.
+
+The controller persists a movement UUID and attempted marker before sending. It persists the receipt before advancing to the next entry. Unknown outcomes remain retryable with the original immutable payload. The server serializes uploads for an account, locks the owned item, validates quantity and count version, and commits stock plus the receipt atomically. Duplicate IDs replay the saved receipt; changed payloads are rejected. A stale receipt cannot roll the local master back to an older version. Counts are absolute quantities; goods in/out are deltas against server stock at upload time. Uploads stop on the first failed row to preserve order.
+
+The camera widget handles its own lifecycle and accepts one barcode per route visit. Keyboard-wedge scans use Enter; repeat scans increment the selected item's draft quantity. SKU mapping, local projections, explicit upload confirmation, conflict resolution, and limitations are described in the [operations guide](OPERATIONS.md). The local schema is version 1; future data-shape changes must preserve/recover pending payloads and transaction IDs.
+
 ## Extending the app
 
-- **Stock movements:** first add server-side atomic receive/dispatch endpoints with an audit trail and idempotency keys. Then add a movement repository operation, controller, and screen. Do not simulate an audit trail by changing quantity locally.
-- **Barcode scan:** add camera permission and a scanner plugin, and use the scanned SKU as a search query. Keep manual entry available.
-- **Offline support:** add durable local storage, per-account partitioning, an outbox, retry/idempotency policy, conflict resolution, and migration tests. The demo repository is not offline synchronization.
+- **Documents and count sessions:** build approval flows, document headers/lines, and reconciliation on top of the movement journal. References currently group entries informally.
+- **Barcode aliases:** add a server-maintained mapping for supplier EAN/UPC codes; current scanning matches exact SKU.
+- **Offline support:** extend the current local master/outbox with incremental sync, history retention, explicit device encryption, and secure offline-session design as required. The demo repository remains a sandbox.
 - **Locations and roles:** extend backend models and enforce authorization there before exposing UI controls.
 - **Persistent sign-in:** use platform secure storage and a server-supported refresh/revocation design; never store passwords.
 
-The mobile app shares the backend with the existing web frontend. It introduces no database migrations or backend changes.
+The mobile app shares the backend with the existing web frontend. The operations endpoints and `V2__inventory_transactions.sql` add a durable journal without changing the existing inventory REST contract.

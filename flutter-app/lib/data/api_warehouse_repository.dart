@@ -1,5 +1,6 @@
 import '../core/api_client.dart';
 import '../domain/models.dart';
+import '../domain/operations.dart';
 import '../domain/warehouse_repository.dart';
 
 class ApiWarehouseRepository implements WarehouseRepository {
@@ -7,6 +8,22 @@ class ApiWarehouseRepository implements WarehouseRepository {
   final ApiClient client;
   @override
   bool get isDemo => false;
+  @override
+  String get storageNamespace =>
+      'api:${client.baseUrl.replaceFirst(RegExp(r'/$'), '')}';
+  @override
+  Future<MasterData> downloadMaster() async => MasterData.fromJson(
+    await client.request('GET', '/operations/master') as Map<String, dynamic>,
+  );
+  @override
+  Future<MovementReceipt> uploadMovement(StockMovement movement) async =>
+      MovementReceipt.fromJson(
+        await client.request(
+          'POST',
+          '/operations/transactions',
+          body: movement.toRequest(),
+        ) as Map<String, dynamic>,
+      );
   @override
   Future<WarehouseUser> authenticate({
     required String email,
